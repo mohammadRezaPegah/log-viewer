@@ -51,16 +51,16 @@ class LogViewerService
         $files = [];
 
         foreach (config('log-viewer.include_files', []) as $pattern) {
-            if (! str_starts_with($pattern, DIRECTORY_SEPARATOR)) {
-                $pattern = $baseDir.$pattern;
+            if (!str_starts_with($pattern, DIRECTORY_SEPARATOR)) {
+                $pattern = $baseDir . $pattern;
             }
 
             $files = array_merge($files, $this->getFilePathsMatchingPattern($pattern));
         }
 
         foreach (config('log-viewer.exclude_files', []) as $pattern) {
-            if (! str_starts_with($pattern, DIRECTORY_SEPARATOR)) {
-                $pattern = $baseDir.$pattern;
+            if (!str_starts_with($pattern, DIRECTORY_SEPARATOR)) {
+                $pattern = $baseDir . $pattern;
             }
 
             $files = array_diff($files, $this->getFilePathsMatchingPattern($pattern));
@@ -94,7 +94,7 @@ class LogViewerService
      */
     public function getFiles(): LogFileCollection
     {
-        if (! isset($this->_cachedFiles)) {
+        if (!isset($this->_cachedFiles)) {
             $fileClass = static::$logFileClass;
 
             $this->_cachedFiles = (new LogFileCollection($this->getLaravelLogFilePaths()))
@@ -104,7 +104,7 @@ class LogViewerService
 
             if (config('log-viewer.hide_unknown_files', true)) {
                 $this->_cachedFiles = $this->_cachedFiles->filter(function (LogFile $file) {
-                    return ! $file->type()->isUnknown();
+                    return !$file->type()->isUnknown();
                 });
             }
         }
@@ -130,7 +130,7 @@ class LogViewerService
             ->where('identifier', $fileIdentifier)
             ->first();
 
-        if (! $file) {
+        if (!$file) {
             $file = $this->getFiles()
                 ->where('name', $fileIdentifier)
                 ->first();
@@ -209,12 +209,12 @@ class LogViewerService
         if (is_null($callback) && isset($this->authCallback)) {
             $canViewLogViewer = call_user_func($this->authCallback, request());
 
-            if (! $canViewLogViewer) {
+            if (!$canViewLogViewer) {
                 throw new AuthorizationException('Unauthorized.');
             }
         } elseif (is_null($callback) && Gate::has('viewLogViewer')) {
             Gate::authorize('viewLogViewer');
-        } elseif (! is_null($callback) && is_callable($callback)) {
+        } elseif (!is_null($callback) && is_callable($callback)) {
             $this->authCallback = $callback;
         }
     }
@@ -250,8 +250,8 @@ class LogViewerService
     public function useLogFileClass(string $class): void
     {
         // figure out whether the class extends from the LogFile class
-        if (! is_subclass_of($class, LogFile::class)) {
-            throw new \InvalidArgumentException("The class {$class} must extend from the ".LogFile::class.' class.');
+        if (!is_subclass_of($class, LogFile::class)) {
+            throw new \InvalidArgumentException("The class {$class} must extend from the " . LogFile::class . ' class.');
         }
 
         static::$logFileClass = $class;
@@ -262,7 +262,7 @@ class LogViewerService
         // figure out whether the class implements the LogReaderInterface
         $reflection = new \ReflectionClass($class);
 
-        if (! $reflection->implementsInterface(LogReaderInterface::class)) {
+        if (!$reflection->implementsInterface(LogReaderInterface::class)) {
             throw new \InvalidArgumentException("The class {$class} must implement the LogReaderInterface.");
         }
 
@@ -292,12 +292,21 @@ class LogViewerService
     public function assetsAreCurrent(): bool
     {
         $publishedPath = public_path('vendor/log-viewer/mix-manifest.json');
+        $publishedPublic_htmlPath = base_path('../public_html/vendor/log-viewer/mix-manifest.json');
 
-        if (! File::exists($publishedPath)) {
-            throw new \RuntimeException('Log Viewer assets are not published. Please run: php artisan vendor:publish --tag=log-viewer-assets --force');
+        switch (true) {
+            case (File::exists($publishedPath)):
+                return File::get($publishedPath) === File::get(__DIR__ . '/../public/mix-manifest.json');
+                break;
+            case (File::exists($publishedPublic_htmlPath)):
+                return File::get($publishedPublic_htmlPath) === File::get(__DIR__ . '/../public/mix-manifest.json');
+                break;
+
+            default:
+                # code...
+                break;
         }
-
-        return File::get($publishedPath) === File::get(__DIR__.'/../public/mix-manifest.json');
+        throw new \RuntimeException('Log Viewer assets are not published. Please run: php artisan vendor:publish --tag=log-viewer-assets --force');
     }
 
     /**
@@ -312,7 +321,7 @@ class LogViewerService
         if (class_exists(InstalledVersions::class)) {
             return InstalledVersions::getPrettyVersion('opcodesio/log-viewer') ?? 'dev-main';
         } else {
-            $composerJson = json_decode(file_get_contents(__DIR__.'/../composer.json'), true);
+            $composerJson = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true);
 
             return is_array($composerJson) && isset($composerJson['version'])
                 ? $composerJson['version']
